@@ -5,19 +5,20 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/LeonMdS/chirpy-server/internal/auth"
 	"github.com/LeonMdS/chirpy-server/internal/database"
 	"github.com/google/uuid"
 )
 
 type addChirpRequest struct {
-	Body   string    `json:"body"`
-	UserID uuid.UUID `json:"user_id"`
+	Body string `json:"body"`
 }
 
 func (cfg *APIConfig) addChirpHandler(w http.ResponseWriter, r *http.Request) {
 	req := addChirpRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Error decoding request when adding chirp", err)
+		return
 	}
 
 	if len(req.Body) > 140 {
@@ -26,9 +27,21 @@ func (cfg *APIConfig) addChirpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	req.Body = chirpCleaner(req.Body)
 
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Could not get authorization token", err)
+		return
+	}
+
+	foundID, err := auth.ValidateJWT(token, cfg.secretKey)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Error validating token", err)
+		return
+	}
+
 	newChirpParams := database.AddChirpParams{
 		Body:   req.Body,
-		UserID: req.UserID,
+		UserID: foundID,
 	}
 	newChirp, err := cfg.db.AddChirp(r.Context(), newChirpParams)
 	if err != nil {

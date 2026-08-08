@@ -19,6 +19,7 @@ func main() {
 	}
 	dbURL := os.Getenv("DB_URL")
 	platform := os.Getenv("PLATFORM")
+	secretKey := os.Getenv("SECRET_KEY")
 
 	dbConn, err := sql.Open("postgres", dbURL)
 	if err != nil {
@@ -27,7 +28,7 @@ func main() {
 
 	const port = "8080"
 
-	cfg := api.NewAPIConfig(database.New(dbConn), platform)
+	cfg := api.NewAPIConfig(database.New(dbConn), platform, secretKey)
 
 	mux := api.NewRouter(cfg)
 
