@@ -1,9 +1,6 @@
 package auth
 
 import (
-	"errors"
-	"net/http"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -52,15 +49,4 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 	}
 
 	return userID, nil
-}
-
-func GetBearerToken(headers http.Header) (string, error) {
-	authString := headers.Get("Authorization")
-	if authString == "" {
-		return "", errors.New("authorization header not found")
-	}
-
-	wordsList := strings.Fields(authString)
-
-	return wordsList[1], nil
 }

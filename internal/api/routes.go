@@ -23,6 +23,11 @@ func NewRouter(cfg *APIConfig) *http.ServeMux {
 	mux.HandleFunc("POST /api/login", cfg.loginHandler)
 	mux.HandleFunc("POST /api/refresh", cfg.refreshHandler)
 	mux.HandleFunc("POST /api/revoke", cfg.revokeHandler)
+	mux.HandleFunc("POST /api/polka/webhooks", cfg.userUpgradeHandler)
+
+	mux.HandleFunc("PUT /api/users", cfg.updateEmailPasswordHandler)
+
+	mux.HandleFunc("DELETE /api/chirps/{chirpID}", cfg.deleteChirpHandler)
 
 	return mux
 }

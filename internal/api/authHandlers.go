@@ -15,11 +15,12 @@ type loginParams struct {
 	Email    string `json:"email"`
 }
 
-type userNoPassword struct {
+type loginResponse struct {
 	ID           uuid.UUID `json:"id"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 	Email        string    `json:"email"`
+	IsRed        bool      `json:"is_chirpy_red"`
 	Token        string    `json:"token"`
 	RefreshToken string    `json:"refresh_token"`
 }
@@ -74,11 +75,12 @@ func (cfg *APIConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := userNoPassword{
+	response := loginResponse{
 		ID:           user.ID,
 		CreatedAt:    user.CreatedAt,
 		UpdatedAt:    user.UpdatedAt,
 		Email:        user.Email,
+		IsRed:        user.IsChirpyRed,
 		Token:        newToken,
 		RefreshToken: newRefreshToken,
 	}

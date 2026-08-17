@@ -11,13 +11,15 @@ type APIConfig struct {
 	db             *database.Queries
 	platform       string
 	secretKey      string
+	polkaKey       string
 }
 
-func NewAPIConfig(db *database.Queries, platform, secretKey string) *APIConfig {
+func NewAPIConfig(db *database.Queries, platform, secretKey, polkaKey string) *APIConfig {
 	return &APIConfig{
 		fileserverHits: atomic.Int32{},
 		db:             db,
 		platform:       platform,
 		secretKey:      secretKey,
+		polkaKey:       polkaKey,
 	}
 }

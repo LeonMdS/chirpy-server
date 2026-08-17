@@ -17,7 +17,7 @@ type addChirpRequest struct {
 func (cfg *APIConfig) addChirpHandler(w http.ResponseWriter, r *http.Request) {
 	req := addChirpRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Error decoding request when adding chirp", err)
+		respondWithError(w, http.StatusBadRequest, "Error decoding request when adding chirp", err)
 		return
 	}
 
@@ -54,9 +54,21 @@ func (cfg *APIConfig) addChirpHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *APIConfig) getAllChirpsHandler(w http.ResponseWriter, r *http.Request) {
-	response, err := cfg.db.GetAllChirps(r.Context())
+	lookupID := r.URL.Query().Get("author_id")
+	parsedID, err := uuid.Parse(lookupID)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Error getting all chirps from database", err)
+		respondWithError(w, http.StatusInternalServerError, "Error parsing ID from string", err)
+		return
+	}
+
+	var response []database.Chirp
+	if lookupID == "" {
+		response, err = cfg.db.GetAllChirps(r.Context())
+	} else {
+		response, err = cfg.db.GetChirpsByAuthor(r.Context(), parsedID)
+	}
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Error getting chirps from database", err)
 		return
 	}
 	respondWithJSON(w, http.StatusOK, response)
@@ -75,4 +87,36 @@ func (cfg *APIConfig) getChirpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusOK, chirp)
+}
+
+func (cfg *APIConfig) deleteChirpHandler(w http.ResponseWriter, r *http.Request) {
+	foundID, err := auth.GetUIDFromHeaderToken(r.Header, cfg.secretKey)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Could not get authorization token", err)
+		return
+	}
+
+	chirpID, err := uuid.Parse(r.PathValue("chirpID"))
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Error parsing chirp ID", err)
+		return
+	}
+
+	chirp, err := cfg.db.GetChirp(r.Context(), chirpID)
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, "Error getting chirp", err)
+		return
+	}
+
+	if chirp.UserID != foundID {
+		respondWithError(w, http.StatusForbidden, "You are not allowed to delete this chirp", nil)
+		return
+	}
+
+	if err = cfg.db.DeleteChirp(r.Context(), chirpID); err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Error deleting chirp", err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
