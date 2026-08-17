@@ -4,23 +4,25 @@ INSERT INTO chirps (body, user_id)
 RETURNING
     *;
 
--- name: GetAllChirps :many
+-- name: GetAllChirpsASC :many
 SELECT
     *
 FROM
     chirps
+WHERE (sqlc.narg ('author_id')::UUID IS NULL
+    OR user_id = sqlc.narg ('author_id')::UUID)
 ORDER BY
     created_at ASC;
 
--- name: GetChirpsByAuthor :many
+-- name: GetAllChirpsDESC :many
 SELECT
     *
 FROM
     chirps
-WHERE
-    user_id = $1
+WHERE (sqlc.narg ('author_id')::UUID IS NULL
+    OR user_id = sqlc.narg ('author_id')::UUID)
 ORDER BY
-    created_at ASC;
+    created_at DESC;
 
 -- name: GetChirp :one
 SELECT

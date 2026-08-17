@@ -55,17 +55,28 @@ func (cfg *APIConfig) addChirpHandler(w http.ResponseWriter, r *http.Request) {
 
 func (cfg *APIConfig) getAllChirpsHandler(w http.ResponseWriter, r *http.Request) {
 	lookupID := r.URL.Query().Get("author_id")
-	parsedID, err := uuid.Parse(lookupID)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Error parsing ID from string", err)
-		return
+	var parsedID uuid.NullUUID
+	var err error
+	if lookupID != "" {
+		parsed, err := uuid.Parse(lookupID)
+		if err != nil {
+			respondWithError(w, http.StatusBadRequest, "Could not parse author ID", err)
+			return
+		}
+
+		parsedID = uuid.NullUUID{UUID: parsed, Valid: true}
 	}
 
+	sortOrder := r.URL.Query().Get("sort")
 	var response []database.Chirp
-	if lookupID == "" {
-		response, err = cfg.db.GetAllChirps(r.Context())
-	} else {
-		response, err = cfg.db.GetChirpsByAuthor(r.Context(), parsedID)
+	switch sortOrder {
+	case "desc":
+		response, err = cfg.db.GetAllChirpsDESC(r.Context(), parsedID)
+	case "asc", "":
+		response, err = cfg.db.GetAllChirpsASC(r.Context(), parsedID)
+	default:
+		respondWithError(w, http.StatusBadRequest, "Invalid sort order", nil)
+		return
 	}
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Error getting chirps from database", err)
